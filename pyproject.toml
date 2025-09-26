@@ -1,0 +1,71 @@
+[project]
+name = "unirules"
+version = "0.1.0"
+description = "unirules is a Python library for building declarative rule sets with a friendly DSL over discrete and interval domains, then turning them into runtime resolvers and analyzers that fit into your applications."
+authors = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
+maintainers = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/de-shev/unirules"
+keywords = [
+    "rules",
+    "rule-engine",
+    "business-rules",
+    "decision-rules",
+    "decision-tree",
+    "declarative",
+    "symbolic-analysis",
+]
+
+requires-python = ">=3.9"
+dependencies = [
+    "typing-extensions>=4.15.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pre-commit>=4.3.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.0",
+    "vermin>=1.6.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "src"
+module-name = "unirules"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+fix = true
+unsafe-fixes = false
+
+lint.select = ["E", "F", "I", "PL", "B"]
+lint.ignore = []
+lint.per-file-ignores = { "tests/**" = ["PLR2004"] }
+
+exclude = [
+    ".git",
+    ".ruff_cache",
+    "__pycache__",
+    "build",
+    "dist"
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+
+[tool.mypy]
+python_version = "3.9"
+files = ["src"]
+
+strict = false
+show_error_codes = true
