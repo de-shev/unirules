@@ -2,6 +2,12 @@
 
 unirules is a Python library for building declarative rule sets with a friendly DSL over discrete and interval domains, then turning them into runtime resolvers and analyzers that fit into your applications.
 
+## Installation
+
+```shell
+pip install unirules
+```
+
 ## Features
 
 - **Resolver with explanations.** Rule sets compile down to a resolver that respects first-wins and priority policies, evaluates contexts, and reports the matched path alongside every tested rule.

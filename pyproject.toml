@@ -1,12 +1,11 @@
 [project]
 name = "unirules"
-version = "0.1.0"
+version = "0.1.1"
 description = "unirules is a Python library for building declarative rule sets with a friendly DSL over discrete and interval domains, then turning them into runtime resolvers and analyzers that fit into your applications."
 authors = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
 maintainers = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/de-shev/unirules"
 keywords = [
     "rules",
     "rule-engine",
@@ -30,6 +29,10 @@ dev = [
     "ruff>=0.13.0",
     "vermin>=1.6.0",
 ]
+
+[project.urls]
+"Source Code" = "https://github.com/de-shev/unirules"
+"Issue Tracker" = "https://github.com/de-shev/unirules/issues"
 
 [build-system]
 requires = ["uv_build>=0.8.22,<0.9.0"]
