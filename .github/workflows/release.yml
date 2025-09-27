@@ -10,6 +10,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    name: Release — Publish to PyPI
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
