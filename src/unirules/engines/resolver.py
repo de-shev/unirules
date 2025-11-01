@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Generic, Iterable, Optional
+from typing import Callable, DefaultDict, Generic, Iterable, Optional, cast
 
 from unirules.core.conditions import AlwaysTrue, And, Cond, CondVisitor, Context, Not, Or
 from unirules.core.rules import RuleItem, RuleSet, RuleSetPolicy, RuleTree, RuleValue, V
 from unirules.domains.common.conditions import Eq
 from unirules.domains.discrete.conditions import In_, NotIn_
 from unirules.domains.interval.conditions import Between, Ge, Gt, Le, Lt
+from unirules.engines._ctx_validation import validate_context
 
 __all__ = ["Explanation", "Resolver"]
 
@@ -135,7 +136,9 @@ class CompileVisitor(CondVisitor[CompileResult]):
         value = cond.value
 
         def _eval(ctx: Context, *, _field: str = field, _value: object = value) -> bool:
-            return ctx.get(_field) == _value
+            if _field not in ctx:
+                return False
+            return ctx[_field] == _value
 
         constraint: tuple[_FieldConstraint, ...]
         try:
@@ -154,7 +157,9 @@ class CompileVisitor(CondVisitor[CompileResult]):
             _field: str = field,
             _items: frozenset[object] = items,
         ) -> bool:
-            return ctx.get(_field) in _items
+            if _field not in ctx:
+                return False
+            return ctx[_field] in _items
 
         constraint = (_FieldConstraint(field=field, values=frozenset(items)),)
         return _eval, constraint
@@ -164,12 +169,8 @@ class CompileVisitor(CondVisitor[CompileResult]):
 
     def visit_between(self, cond: Between) -> CompileResult:
         field = cond.field.name
-        closed = cond.closed
-        try:
-            lo = float(cond.lo)
-            hi = float(cond.hi)
-        except (TypeError, ValueError):
-            return self._fallback(cond)
+        lo = cond.lo
+        hi = cond.hi
 
         def _eval(
             ctx: Context,
@@ -177,83 +178,62 @@ class CompileVisitor(CondVisitor[CompileResult]):
             _field: str = field,
             _lo: float = lo,
             _hi: float = hi,
-            _closed: str = closed,
+            _left_closed: bool = cond.left_closed,
+            _right_closed: bool = cond.right_closed,
         ) -> bool:
-            raw = ctx.get(_field)
-            try:
-                v = float(raw)  # type: ignore[arg-type]
-            except (TypeError, ValueError):
+            if _field not in ctx:
                 return False
-            left = v > _lo if _closed in ("right", "none") else v >= _lo
-            right = v < _hi if _closed in ("left", "none") else v <= _hi
-            return left and right
+            v = cast(float, ctx[_field])
+            left_ok = v > _lo if _left_closed else v >= _lo
+            right_ok = v < _hi if _right_closed else v <= _hi
+            return left_ok and right_ok
 
         return _eval, tuple()
 
     def visit_gt(self, cond: Gt) -> CompileResult:
         field = cond.field.name
-        try:
-            value = float(cond.value)
-        except (TypeError, ValueError):
-            return self._fallback(cond)
+        value = cond.value
 
         def _eval(ctx: Context, *, _field: str = field, _value: float = value) -> bool:
-            raw = ctx.get(_field)
-            try:
-                v = float(raw)  # type: ignore[arg-type]
-            except (TypeError, ValueError):
+            if _field not in ctx:
                 return False
+            v = cast(float, ctx[_field])
             return v > _value
 
         return _eval, tuple()
 
     def visit_ge(self, cond: Ge) -> CompileResult:
         field = cond.field.name
-        try:
-            value = float(cond.value)
-        except (TypeError, ValueError):
-            return self._fallback(cond)
+        value = cond.value
 
         def _eval(ctx: Context, *, _field: str = field, _value: float = value) -> bool:
-            raw = ctx.get(_field)
-            try:
-                v = float(raw)  # type: ignore[arg-type]
-            except (TypeError, ValueError):
+            if _field not in ctx:
                 return False
+            v = cast(float, ctx[_field])
             return v >= _value
 
         return _eval, tuple()
 
     def visit_lt(self, cond: Lt) -> CompileResult:
         field = cond.field.name
-        try:
-            value = float(cond.value)
-        except (TypeError, ValueError):
-            return self._fallback(cond)
+        value = cond.value
 
         def _eval(ctx: Context, *, _field: str = field, _value: float = value) -> bool:
-            raw = ctx.get(_field)
-            try:
-                v = float(raw)  # type: ignore[arg-type]
-            except (TypeError, ValueError):
+            if _field not in ctx:
                 return False
+            v = cast(float, ctx[_field])
             return v < _value
 
         return _eval, tuple()
 
     def visit_le(self, cond: Le) -> CompileResult:
         field = cond.field.name
-        try:
-            value = float(cond.value)
-        except (TypeError, ValueError):
-            return self._fallback(cond)
+        value = cond.value
 
         def _eval(ctx: Context, *, _field: str = field, _value: float = value) -> bool:
-            raw = ctx.get(_field)
-            try:
-                v = float(raw)  # type: ignore[arg-type]
-            except (TypeError, ValueError):
+            if _field not in ctx:
                 return False
+            v = cast(float, ctx[_field])
             return v <= _value
 
         return _eval, tuple()
@@ -395,6 +375,7 @@ class Resolver(Generic[V]):
             The value produced by the first matching rule.
         """
 
+        ctx = validate_context(self.ruleset, ctx)
         return self._compiled.resolve(ctx)
 
     def explain(self, ctx: Context) -> Explanation[V]:
@@ -407,6 +388,7 @@ class Resolver(Generic[V]):
             Explanation describing the evaluation path and result.
         """
 
+        ctx = validate_context(self.ruleset, ctx)
         tested: list[str] = []
         for item in self._compiled.iter_candidates(ctx):
             label = getattr(item.rule, "name", None) or "<rule>"

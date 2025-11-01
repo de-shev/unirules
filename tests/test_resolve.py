@@ -78,20 +78,11 @@ from .credit_scoring import LoanDecision, credit_score
         ),
         pytest.param(
             {
-                "income_level": "ULTRA_HIGH",
-                "credit_score": 900,
-                "loan_purpose": "BUSINESS",
-            },
-            LoanDecision(decision="REVIEW", rate=None),
-            id="out-of-domain",
-        ),
-        pytest.param(
-            {
                 "income_level": "HIGH",
                 "credit_score": 850,
                 "loan_purpose": "AUTO",
             },
-            LoanDecision(decision="REVIEW", rate=7.0),
+            LoanDecision(decision="APPROVE", rate=3.5),
             id="high-income-upper-boundary",
         ),
         pytest.param(
@@ -121,6 +112,20 @@ def test_resolve_no_match_raises_lookuperror() -> None:
     ctx: Mapping[str, Any] = {"credit_score": 600}
     with pytest.raises(LookupError, match="No rule matched"):
         temp_resolver.resolve(ctx)
+
+
+def test_resolver_rejects_invalid_discrete_context(credit_scoring_resolver) -> None:
+    """Invalid discrete context values raise a ValueError."""
+
+    with pytest.raises(ValueError, match="income_level"):
+        credit_scoring_resolver.resolve({"income_level": "ULTRA_HIGH"})
+
+
+def test_resolver_rejects_invalid_interval_context(credit_scoring_resolver) -> None:
+    """Non-numeric interval context values raise a ValueError."""
+
+    with pytest.raises(ValueError, match="credit_score"):
+        credit_scoring_resolver.resolve({"credit_score": "not-a-number"})
 
 
 def test_priority_policy_prefers_highest_priority_rule() -> None:

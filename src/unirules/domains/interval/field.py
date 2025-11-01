@@ -34,6 +34,17 @@ class IntervalField(Field[IntervalDomain]):
         """
         return Eq(IntervalFieldRef(self.name, self.domain), other)
 
+    def __ne__(self, other: object) -> Cond:  # type: ignore[override]
+        """Create an inequality condition.
+
+        Args:
+            other (object): The value that violates the equality condition.
+
+        Returns:
+            Cond: Negated equality condition referencing this field.
+        """
+        return ~self.__eq__(other)
+
     def __gt__(self, other: Union[float, int]) -> IntervalCond:
         return self.gt(other)
 

@@ -8,7 +8,7 @@ for understanding what values of a target field are covered by rules.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Generic, Mapping, Optional, Union, cast, overload
+from typing import Generic, Mapping, Optional, Union, cast, overload
 
 from typing_extensions import TypeAlias
 
@@ -26,6 +26,7 @@ from unirules.domains.interval.domain import IntervalDomain
 from unirules.domains.interval.field import IntervalField
 from unirules.domains.interval.field_ref import IntervalFieldRef
 from unirules.domains.interval.values import Interval, IntervalSet
+from unirules.engines._ctx_validation import validate_context
 
 __all__ = [
     "TOP",
@@ -54,17 +55,6 @@ BOT = _Bot()
 ProjectionResult: TypeAlias = Union[ValueSet, _Top, _Bot]
 
 
-def _coerce_float(value: Optional[object]) -> Optional[float]:
-    """Best-effort conversion of a context value to ``float`` for comparisons."""
-
-    if value is None:
-        return None
-    try:
-        return float(cast(Any, value))
-    except (TypeError, ValueError):
-        return None
-
-
 class ProjectionVisitor(CondVisitor[ProjectionResult]):
     def __init__(
         self,
@@ -78,9 +68,9 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         self.ctx = ctx
 
     def _ctx_get(self, name: str) -> tuple[bool, Optional[object]]:
-        if self.ctx is None:
+        if self.ctx is None or name not in self.ctx:
             return (False, None)
-        return (name in self.ctx, self.ctx.get(name))
+        return (True, self.ctx[name])
 
     def visit_eq(self, cond: Eq) -> ProjectionResult:
         if cond.field.name == self.target:
@@ -109,22 +99,19 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
 
     def visit_between(self, cond: Between) -> ProjectionResult:
         if cond.field.name == self.target:
-            lo, hi, closed = float(cond.lo), float(cond.hi), cond.closed
-            return IntervalSet([(lo, hi, closed)])
+            return IntervalSet([(cond.lo, cond.hi, cond.closed)])
         known, v = self._ctx_get(cond.field.name)
         if not known:
             return TOP
-        val = _coerce_float(v)
-        if val is None:
-            return BOT
-        lo = float(cond.lo)
-        hi = float(cond.hi)
-        left = val > lo if cond.closed in ("right", "none") else val >= lo
-        right = val < hi if cond.closed in ("left", "none") else val <= hi
-        return TOP if (left and right) else BOT
+        val = cast(float, v)
+        lo = cond.lo
+        hi = cond.hi
+        left_ok = val > lo if cond.left_closed else val >= lo
+        right_ok = val < hi if cond.right_closed else val <= hi
+        return TOP if (left_ok and right_ok) else BOT
 
     def visit_gt(self, cond: Gt) -> ProjectionResult:  # noqa: PLR0911
-        threshold = float(cond.value)
+        threshold = cond.value
         if cond.field.name == self.target:
             if isinstance(self.target_domain, IntervalDomain):
                 universe = cast(IntervalSet, self.target_domain.get_universe())
@@ -143,13 +130,11 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         known, v = self._ctx_get(cond.field.name)
         if not known:
             return TOP
-        ctx_val = _coerce_float(v)
-        if ctx_val is None:
-            return BOT
+        ctx_val = cast(float, v)
         return TOP if ctx_val > threshold else BOT
 
     def visit_ge(self, cond: Ge) -> ProjectionResult:  # noqa: PLR0911
-        threshold = float(cond.value)
+        threshold = cond.value
         if cond.field.name == self.target:
             if isinstance(self.target_domain, IntervalDomain):
                 universe = cast(IntervalSet, self.target_domain.get_universe())
@@ -168,13 +153,11 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         known, v = self._ctx_get(cond.field.name)
         if not known:
             return TOP
-        ctx_val = _coerce_float(v)
-        if ctx_val is None:
-            return BOT
+        ctx_val = cast(float, v)
         return TOP if ctx_val >= threshold else BOT
 
     def visit_lt(self, cond: Lt) -> ProjectionResult:  # noqa: PLR0911
-        threshold = float(cond.value)
+        threshold = cond.value
         if cond.field.name == self.target:
             if isinstance(self.target_domain, IntervalDomain):
                 universe = cast(IntervalSet, self.target_domain.get_universe())
@@ -193,13 +176,11 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         known, v = self._ctx_get(cond.field.name)
         if not known:
             return TOP
-        ctx_val = _coerce_float(v)
-        if ctx_val is None:
-            return BOT
+        ctx_val = cast(float, v)
         return TOP if ctx_val < threshold else BOT
 
     def visit_le(self, cond: Le) -> ProjectionResult:  # noqa: PLR0911
-        threshold = float(cond.value)
+        threshold = cond.value
         if cond.field.name == self.target:
             if isinstance(self.target_domain, IntervalDomain):
                 universe = cast(IntervalSet, self.target_domain.get_universe())
@@ -218,9 +199,7 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         known, v = self._ctx_get(cond.field.name)
         if not known:
             return TOP
-        ctx_val = _coerce_float(v)
-        if ctx_val is None:
-            return BOT
+        ctx_val = cast(float, v)
         return TOP if ctx_val <= threshold else BOT
 
     def visit_and(self, cond: And) -> ProjectionResult:
@@ -474,6 +453,9 @@ class Analyzer(Generic[V]):
 
         # Use precomputed domains from the ruleset for ctx filter (faster)
         domains: Mapping[str, Union[DiscreteDomain, IntervalDomain]] = self.domains
+
+        if ctx is not None:
+            ctx = validate_context(self.ruleset, ctx)
 
         universe = target_domain.get_universe()
 

@@ -65,8 +65,8 @@ def test_explain_nested_fallback(credit_scoring_resolver) -> None:
     explanation = credit_scoring_resolver.explain(ctx)
 
     assert explanation.matched_rule == "High income"
-    assert explanation.path == ["High income", "High income fallback"]
-    assert explanation.result == LoanDecision(decision="REVIEW", rate=7.0)
+    assert explanation.path == ["High income", "Top tier approval"]
+    assert explanation.result == LoanDecision(decision="APPROVE", rate=3.5)
 
 
 def test_explain_no_match_returns_empty_result(credit_scoring_ruleset) -> None:

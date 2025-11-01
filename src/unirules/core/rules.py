@@ -7,7 +7,7 @@ and builder patterns for creating rules with fluent syntax.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Generic, Optional, TypeVar, Union
@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Generic, Optional, TypeVar, Union
 from typing_extensions import TypeAlias
 
 from unirules.core.conditions import Cond
+from unirules.core.domains import Domain
+from unirules.core.fields import FieldRef
 
 if TYPE_CHECKING:
     from unirules.engines.analyzer import Analyzer
@@ -85,6 +87,19 @@ class RuleSet(Generic[V]):
                 f"Policy must be specified as a string or RuleSetPolicy, got {type(policy).__name__}",
             )
 
+        field_refs_by_name: dict[str, FieldRef[Domain]] = {}
+        for item in self.rules:
+            for field in item.condition.iter_field_refs():
+                if field.name not in field_refs_by_name:
+                    field_refs_by_name[field.name] = field
+            if isinstance(item, RuleTree):
+                for field in item.subtree.iter_field_refs():
+                    if field.name not in field_refs_by_name:
+                        field_refs_by_name[field.name] = field
+
+        self._field_refs_by_name = field_refs_by_name
+        self._field_refs: tuple[FieldRef[Domain], ...] = tuple(field_refs_by_name.values())
+
     def to_resolver(self) -> "Resolver[V]":
         from unirules.engines.resolver import Resolver  # noqa: PLC0415
 
@@ -94,3 +109,8 @@ class RuleSet(Generic[V]):
         from unirules.engines.analyzer import Analyzer  # noqa: PLC0415
 
         return Analyzer(ruleset=self)
+
+    def iter_field_refs(self) -> Iterable[FieldRef[Domain]]:
+        """Yield all unique field references used anywhere in the ruleset."""
+
+        return iter(self._field_refs)
