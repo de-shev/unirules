@@ -9,6 +9,7 @@ from typing_extensions import Protocol
 R_co = TypeVar("R_co", covariant=True)
 
 if TYPE_CHECKING:
+    from unirules.core.domains import Domain
     from unirules.core.fields import FieldRef
     from unirules.domains.common.conditions import Eq
     from unirules.domains.discrete.conditions import In_, NotIn_
@@ -75,7 +76,7 @@ class Cond(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def iter_field_refs(self) -> Iterable["FieldRef[object]"]:
+    def iter_field_refs(self) -> Iterable["FieldRef[Domain]"]:
         """Yield all field references touched by the condition."""
 
     def __and__(self, other: Cond) -> Cond:
@@ -113,7 +114,7 @@ class And(Cond):
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:
         return visitor.visit_and(self)
 
-    def iter_field_refs(self) -> Iterable["FieldRef[object]"]:
+    def iter_field_refs(self) -> Iterable["FieldRef[Domain]"]:
         yield from self.a.iter_field_refs()
         yield from self.b.iter_field_refs()
 
@@ -140,7 +141,7 @@ class Or(Cond):
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:
         return visitor.visit_or(self)
 
-    def iter_field_refs(self) -> Iterable["FieldRef[object]"]:
+    def iter_field_refs(self) -> Iterable["FieldRef[Domain]"]:
         yield from self.a.iter_field_refs()
         yield from self.b.iter_field_refs()
 
@@ -166,7 +167,7 @@ class Not(Cond):
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:
         return visitor.visit_not(self)
 
-    def iter_field_refs(self) -> Iterable["FieldRef[object]"]:
+    def iter_field_refs(self) -> Iterable["FieldRef[Domain]"]:
         yield from self.a.iter_field_refs()
 
 
@@ -188,5 +189,5 @@ class AlwaysTrue(Cond):
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:
         return visitor.visit_always_true(self)
 
-    def iter_field_refs(self) -> Iterable["FieldRef[object]"]:
+    def iter_field_refs(self) -> Iterable["FieldRef[Domain]"]:
         return ()
