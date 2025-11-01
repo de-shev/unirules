@@ -1,6 +1,6 @@
 [project]
 name = "unirules"
-version = "0.1.3"
+version = "0.1.4"
 description = "unirules is a Python library for building declarative rule sets with a friendly DSL over discrete and interval domains, then turning them into runtime resolvers and analyzers that fit into your applications."
 authors = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
 maintainers = [{ name = "Dmitry Shevchenko", email = "dmitry.e.shev@gmail.com" }]
