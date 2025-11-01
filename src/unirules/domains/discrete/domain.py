@@ -17,10 +17,7 @@ class DiscreteDomain(Domain):
             vals (Union[Iterable[Any], type[Enum]]): Values describing the
                 domain or an enumeration whose members define the domain.
         """
-        if isinstance(vals, type) and issubclass(vals, Enum):
-            self.vals: frozenset[Any] = frozenset(e.value for e in vals)
-        else:
-            self.vals = frozenset(vals)
+        self.vals = frozenset(vals)
 
     def get_universe(self) -> DiscreteSet:
         """Return the universe of this domain.
