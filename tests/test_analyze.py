@@ -77,6 +77,15 @@ def test_discrete_analysis_ignores_target_value_in_context(ctx: Mapping[str, Any
     assert analysis.uncovered_values() == {"FR"}
 
 
+def test_analyzer_rejects_invalid_context_value() -> None:
+    """Analyzer raises when the context contains out-of-domain discrete values."""
+
+    analyzer, country = _build_country_ruleset()
+
+    with pytest.raises(ValueError, match="program"):
+        analyzer.analyze(target=country, ctx={"program": "UNKNOWN"})
+
+
 def test_excluded_via_not_in() -> None:
     """NOT IN conditions contribute with the complement of the restricted values."""
 
@@ -273,6 +282,16 @@ def test_interval_analysis_respects_context_filters() -> None:
         ((0, 0), ((0.0, 100.0, "right"),), "VIP-LOW"),
         ((0, 1), ((100.0, 200.0, "right"),), "VIP-MID"),
     ]
+
+
+def test_analyzer_rejects_invalid_interval_context() -> None:
+    """Analyzer raises when interval contexts contain non-numeric values."""
+
+    amount = field("amount", domain=IntervalDomain(0, 100))
+    analyzer = ruleset(when(amount.gt(10)).then("OK")).to_analyzer()
+
+    with pytest.raises(ValueError, match="amount"):
+        analyzer.analyze(target=amount, ctx={"amount": "NaN"})
 
 
 def test_included_excluded_with_otherwise() -> None:

@@ -15,6 +15,9 @@ class Eq(Cond):
     field: FieldRef[Domain]
     value: Any
 
+    def __post_init__(self) -> None:
+        self.field.validate_value(self.value, role="Condition value")
+
     def eval(self, ctx: Context) -> bool:
         """Evaluate whether the field value equals the specified value.
 
@@ -29,6 +32,9 @@ class Eq(Cond):
 
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:
         return visitor.visit_eq(self)
+
+    def iter_field_refs(self):
+        yield self.field
 
 
 __all__ = ["Eq"]

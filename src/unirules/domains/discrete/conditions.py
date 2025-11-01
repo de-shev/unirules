@@ -12,12 +12,19 @@ from unirules.domains.discrete.field_ref import DiscreteFieldRef
 class DiscreteCond(Cond, ABC):
     field: DiscreteFieldRef
 
+    def iter_field_refs(self):
+        yield self.field
+
 
 @dataclass(frozen=True)
 class In_(DiscreteCond):
     """Condition checking if a field value is in a set of items."""
 
     items: frozenset[Any]
+
+    def __post_init__(self) -> None:
+        for item in self.items:
+            self.field.validate_value(item, role="Condition value")
 
     def eval(self, ctx: Context) -> bool:
         """Evaluate whether the field value is in the specified set of items.
@@ -40,6 +47,10 @@ class NotIn_(DiscreteCond):
     """Condition checking if a field value is not in a set of items."""
 
     items: frozenset[Any]
+
+    def __post_init__(self) -> None:
+        for item in self.items:
+            self.field.validate_value(item, role="Condition value")
 
     def eval(self, ctx: Context) -> bool:
         """Evaluate whether the field value is outside the specified items.
