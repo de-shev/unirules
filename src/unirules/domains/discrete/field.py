@@ -33,6 +33,17 @@ class DiscreteField(Field[DiscreteDomain]):
         """
         return Eq(DiscreteFieldRef(self.name, self.domain), other)
 
+    def __ne__(self, other: object) -> Cond:  # type: ignore[override]
+        """Create an inequality condition.
+
+        Args:
+            other (object): The value that violates the equality condition.
+
+        Returns:
+            Cond: Negated equality condition referencing this field.
+        """
+        return ~self.__eq__(other)
+
     def isin(self, items: Iterable[Any]) -> DiscreteCond:
         """Create an ``IN`` condition for discrete domains.
 
