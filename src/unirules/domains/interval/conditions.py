@@ -60,8 +60,8 @@ class Between(IntervalCond):
         v = cast(float, ctx[self.field.name])
         lo = self.lo
         hi = self.hi
-        left_ok = v >= lo if self.left_closed else v > lo
-        right_ok = v <= hi if self.right_closed else v < hi
+        left_ok = v > lo if self.left_closed else v >= lo
+        right_ok = v < hi if self.right_closed else v <= hi
         return left_ok and right_ok
 
     def accept(self, visitor: CondVisitor[R_co]) -> R_co:

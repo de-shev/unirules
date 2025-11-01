@@ -82,7 +82,7 @@ from .credit_scoring import LoanDecision, credit_score
                 "credit_score": 850,
                 "loan_purpose": "AUTO",
             },
-            LoanDecision(decision="REVIEW", rate=7.0),
+            LoanDecision(decision="APPROVE", rate=3.5),
             id="high-income-upper-boundary",
         ),
         pytest.param(

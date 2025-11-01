@@ -106,8 +106,8 @@ class ProjectionVisitor(CondVisitor[ProjectionResult]):
         val = cast(float, v)
         lo = cond.lo
         hi = cond.hi
-        left_ok = val >= lo if cond.left_closed else val > lo
-        right_ok = val <= hi if cond.right_closed else val < hi
+        left_ok = val > lo if cond.left_closed else val >= lo
+        right_ok = val < hi if cond.right_closed else val <= hi
         return TOP if (left_ok and right_ok) else BOT
 
     def visit_gt(self, cond: Gt) -> ProjectionResult:  # noqa: PLR0911

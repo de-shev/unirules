@@ -184,8 +184,8 @@ class CompileVisitor(CondVisitor[CompileResult]):
             if _field not in ctx:
                 return False
             v = cast(float, ctx[_field])
-            left_ok = v >= _lo if _left_closed else v > _lo
-            right_ok = v <= _hi if _right_closed else v < _hi
+            left_ok = v > _lo if _left_closed else v >= _lo
+            right_ok = v < _hi if _right_closed else v <= _hi
             return left_ok and right_ok
 
         return _eval, tuple()
